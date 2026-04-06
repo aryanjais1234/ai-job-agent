@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "AI Job Agent — React frontend",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
