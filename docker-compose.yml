@@ -41,8 +41,7 @@ services:
     image: redis:7-alpine
     container_name: aijobagent-redis
     restart: unless-stopped
-    command: >
-      sh -c "if [ -n '$$REDIS_PASSWORD' ]; then redis-server --requirepass $$REDIS_PASSWORD; else redis-server; fi"
+    command: redis-server --requirepass ${REDIS_PASSWORD:-}
     environment:
       REDIS_PASSWORD: ${REDIS_PASSWORD:-}
     ports:
