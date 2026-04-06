@@ -1,0 +1,9 @@
+fastapi
+uvicorn[standard]
+playwright
+httpx
+pydantic>=2.0
+pika
+beautifulsoup4
+python-dotenv
+lxml
