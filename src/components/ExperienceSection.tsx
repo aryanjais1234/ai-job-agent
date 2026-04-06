@@ -9,7 +9,7 @@ interface ExperienceSectionProps {
 }
 
 function generateId(): string {
-  return Math.random().toString(36).substring(2, 11);
+  return crypto.randomUUID();
 }
 
 export default function ExperienceSection({

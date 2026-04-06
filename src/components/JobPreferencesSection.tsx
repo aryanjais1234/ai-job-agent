@@ -116,8 +116,12 @@ export default function JobPreferencesSection({
             <input
               type="text"
               inputMode="numeric"
+              pattern="[0-9]*"
               value={preferences.salaryMin}
-              onChange={(e) => handleChange("salaryMin", e.target.value)}
+              onChange={(e) => {
+                const value = e.target.value.replace(/[^0-9]/g, "");
+                handleChange("salaryMin", value);
+              }}
               placeholder="e.g. 80000"
               className={inputClass}
             />
@@ -137,8 +141,12 @@ export default function JobPreferencesSection({
             <input
               type="text"
               inputMode="numeric"
+              pattern="[0-9]*"
               value={preferences.salaryMax}
-              onChange={(e) => handleChange("salaryMax", e.target.value)}
+              onChange={(e) => {
+                const value = e.target.value.replace(/[^0-9]/g, "");
+                handleChange("salaryMax", value);
+              }}
               placeholder="e.g. 120000"
               className={inputClass}
             />
