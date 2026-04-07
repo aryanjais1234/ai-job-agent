@@ -1,33 +1,73 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
-
-/**
- * Root application component.
- * Sets up client-side routing for all major screens.
- */
-function App() {
-  return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/login" element={<PlaceholderPage title="Login" />} />
-        <Route path="/register" element={<PlaceholderPage title="Register" />} />
-        <Route path="/onboarding" element={<PlaceholderPage title="Onboarding" />} />
-        <Route path="/dashboard" element={<PlaceholderPage title="Dashboard" />} />
-        <Route path="/resume/:id" element={<PlaceholderPage title="Resume Preview" />} />
-        <Route path="/applications" element={<PlaceholderPage title="Application Tracker" />} />
-        <Route path="*" element={<Navigate to="/login" replace />} />
-      </Routes>
-    </BrowserRouter>
-  );
-}
+import { AuthProvider, useAuth } from './context/AuthContext';
+import ProtectedRoute from './components/ProtectedRoute';
+import Layout from './components/Layout';
+import LoginPage from './pages/LoginPage';
+import RegisterPage from './pages/RegisterPage';
+import DashboardPage from './pages/DashboardPage';
 
 function PlaceholderPage({ title }) {
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold text-gray-800 mb-2">🧠 AI Job Agent</h1>
-        <p className="text-xl text-gray-500">{title} — coming soon</p>
-      </div>
+    <div className="text-center py-16">
+      <h1 className="text-3xl font-bold text-gray-800 mb-2">{title}</h1>
+      <p className="text-gray-500">Coming soon</p>
     </div>
+  );
+}
+
+function DefaultRedirect() {
+  const { isAuthenticated } = useAuth();
+  return <Navigate to={isAuthenticated ? '/dashboard' : '/login'} replace />;
+}
+
+function App() {
+  return (
+    <BrowserRouter>
+      <AuthProvider>
+        <Routes>
+          {/* Public routes */}
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
+
+          {/* Protected routes */}
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <Layout><DashboardPage /></Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/applications"
+            element={
+              <ProtectedRoute>
+                <Layout><PlaceholderPage title="Application Tracker" /></Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/resume/:id"
+            element={
+              <ProtectedRoute>
+                <Layout><PlaceholderPage title="Resume Preview" /></Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/onboarding"
+            element={
+              <ProtectedRoute>
+                <Layout><PlaceholderPage title="Onboarding" /></Layout>
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Default redirect */}
+          <Route path="*" element={<DefaultRedirect />} />
+        </Routes>
+      </AuthProvider>
+    </BrowserRouter>
   );
 }
 
