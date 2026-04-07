@@ -29,6 +29,8 @@ public class CoverLetterService {
     private final JobAnalysisRepository jobAnalysisRepository;
     private final CoverLetterRepository coverLetterRepository;
 
+    private static final int MAX_DESCRIPTION_LENGTH = 1000;
+
     private static final String SYSTEM_PROMPT = """
             You are an expert career consultant who writes compelling, professional cover letters. \
             Write a personalized cover letter (250-350 words) that is specific to the job and company. \
@@ -85,7 +87,7 @@ public class CoverLetterService {
                 job.getLocation() != null ? job.getLocation() : "Not specified",
                 analysis != null && analysis.getDomain() != null ? analysis.getDomain() : "Technology",
                 analysis != null && analysis.getRequiredSkills() != null ? analysis.getRequiredSkills() : "[]",
-                job.getDescription() != null ? job.getDescription().substring(0, Math.min(1000, job.getDescription().length())) : "");
+                job.getDescription() != null ? job.getDescription().substring(0, Math.min(MAX_DESCRIPTION_LENGTH, job.getDescription().length())) : "");
 
         String model = aiConfig.getTailorModel();
         long startTime = System.currentTimeMillis();

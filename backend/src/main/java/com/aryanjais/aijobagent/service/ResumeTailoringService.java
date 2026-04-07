@@ -33,6 +33,8 @@ public class ResumeTailoringService {
     private final UserRepository userRepository;
     private final ObjectMapper objectMapper;
 
+    private static final BigDecimal DEFAULT_ATS_SCORE = BigDecimal.valueOf(85);
+
     private static final String SYSTEM_PROMPT = """
             You are an expert ATS resume optimizer. Tailor the candidate's resume for the target job description. \
             Respond ONLY with valid JSON matching the schema below. Do NOT fabricate experience or skills the candidate does not have.""";
@@ -187,7 +189,7 @@ public class ResumeTailoringService {
     private BigDecimal getAtsScore(JsonNode json) {
         JsonNode node = json.get("estimated_ats_score");
         if (node == null || node.isNull()) {
-            return BigDecimal.valueOf(85);
+            return DEFAULT_ATS_SCORE;
         }
         return BigDecimal.valueOf(node.asDouble());
     }
