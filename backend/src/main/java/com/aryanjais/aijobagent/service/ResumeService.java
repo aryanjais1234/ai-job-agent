@@ -14,6 +14,8 @@ import com.aryanjais.aijobagent.repository.ResumeRepository;
 import com.aryanjais.aijobagent.repository.ResumeSkillRepository;
 import com.aryanjais.aijobagent.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,11 +34,14 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class ResumeService {
 
+    private static final Logger log = LoggerFactory.getLogger(ResumeService.class);
+
     private final ResumeRepository resumeRepository;
     private final ResumeSkillRepository resumeSkillRepository;
     private final ResumeExperienceRepository resumeExperienceRepository;
     private final ResumeEducationRepository resumeEducationRepository;
     private final UserRepository userRepository;
+    private final ResumeParserService resumeParserService;
 
     @Value("${app.storage.resume-upload-dir}")
     private String uploadDir;
@@ -78,6 +83,15 @@ public class ResumeService {
                 .build();
 
         resume = resumeRepository.save(resume);
+
+        // Trigger resume parsing (T-3.4)
+        try {
+            resumeParserService.parseResume(resume.getId());
+        } catch (Exception e) {
+            // Log but don't fail the upload — parsing can be retried
+            log.warn("Resume parsing failed for resume {}: {}", resume.getId(), e.getMessage());
+        }
+
         return buildResumeResponse(resume);
     }
 

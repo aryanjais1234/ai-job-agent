@@ -24,6 +24,7 @@
         <jjwt.version>0.12.5</jjwt.version>
         <springdoc.version>2.5.0</springdoc.version>
         <openpdf.version>1.3.35</openpdf.version>
+        <tika.version>3.2.2</tika.version>
         <testcontainers.version>1.19.7</testcontainers.version>
     </properties>
 
@@ -107,6 +108,18 @@
             <groupId>com.github.librepdf</groupId>
             <artifactId>openpdf</artifactId>
             <version>${openpdf.version}</version>
+        </dependency>
+
+        <!-- ── Resume Parsing (Tika) ────────────────────────────── -->
+        <dependency>
+            <groupId>org.apache.tika</groupId>
+            <artifactId>tika-core</artifactId>
+            <version>${tika.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.tika</groupId>
+            <artifactId>tika-parsers-standard-package</artifactId>
+            <version>${tika.version}</version>
         </dependency>
 
         <!-- ── Lombok ────────────────────────────────────────────── -->

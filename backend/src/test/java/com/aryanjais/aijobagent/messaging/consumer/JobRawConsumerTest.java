@@ -1,6 +1,8 @@
 package com.aryanjais.aijobagent.messaging.consumer;
 
+import com.aryanjais.aijobagent.entity.Job;
 import com.aryanjais.aijobagent.messaging.dto.JobRawMessage;
+import com.aryanjais.aijobagent.messaging.producer.JobAnalyzeProducer;
 import com.aryanjais.aijobagent.service.JobPersistenceService;
 import com.rabbitmq.client.Channel;
 import org.junit.jupiter.api.Test;
@@ -12,6 +14,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -22,30 +25,36 @@ class JobRawConsumerTest {
     private JobPersistenceService jobPersistenceService;
 
     @Mock
+    private JobAnalyzeProducer jobAnalyzeProducer;
+
+    @Mock
     private Channel channel;
 
     @InjectMocks
     private JobRawConsumer jobRawConsumer;
 
     @Test
-    void consumeRawJob_newJob_acksMessage() throws Exception {
+    void consumeRawJob_newJob_acksAndPublishesForAnalysis() throws Exception {
         JobRawMessage message = buildMessage();
-        when(jobPersistenceService.persistJob(message)).thenReturn(true);
+        Job persistedJob = Job.builder().id(42L).build();
+        when(jobPersistenceService.persistJob(message)).thenReturn(persistedJob);
 
         jobRawConsumer.consumeRawJob(message, channel, 1L);
 
         verify(jobPersistenceService).persistJob(message);
+        verify(jobAnalyzeProducer).publishForAnalysis(42L);
         verify(channel).basicAck(1L, false);
     }
 
     @Test
-    void consumeRawJob_duplicateJob_acksMessage() throws Exception {
+    void consumeRawJob_duplicateJob_acksWithoutPublishing() throws Exception {
         JobRawMessage message = buildMessage();
-        when(jobPersistenceService.persistJob(message)).thenReturn(false);
+        when(jobPersistenceService.persistJob(message)).thenReturn(null);
 
         jobRawConsumer.consumeRawJob(message, channel, 2L);
 
         verify(jobPersistenceService).persistJob(message);
+        verify(jobAnalyzeProducer, never()).publishForAnalysis(any());
         verify(channel).basicAck(2L, false);
     }
 

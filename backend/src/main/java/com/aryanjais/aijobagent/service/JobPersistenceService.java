@@ -30,10 +30,10 @@ public class JobPersistenceService {
 
     /**
      * Persist a raw scraped job message to the database.
-     * Returns true if a new job was inserted, false if it was a duplicate.
+     * Returns the persisted Job if new, null if duplicate.
      */
     @Transactional
-    public boolean persistJob(JobRawMessage message) {
+    public Job persistJob(JobRawMessage message) {
         SourcePlatform platform = parseSourcePlatform(message.getSourcePlatform());
         String sourceUrl = truncateUrl(message.getSourceUrl());
 
@@ -41,7 +41,7 @@ public class JobPersistenceService {
 
         if (existing.isPresent()) {
             log.debug("Duplicate job skipped: {} @ {} [{}]", message.getTitle(), message.getCompany(), sourceUrl);
-            return false;
+            return null;
         }
 
         Job job = Job.builder()
@@ -63,9 +63,9 @@ public class JobPersistenceService {
                         : LocalDateTime.now())
                 .build();
 
-        jobRepository.save(job);
-        log.info("Persisted new job: {} @ {} [{}]", job.getTitle(), job.getCompany(), platform);
-        return true;
+        Job saved = jobRepository.save(job);
+        log.info("Persisted new job: {} @ {} [{}]", saved.getTitle(), saved.getCompany(), platform);
+        return saved;
     }
 
     private SourcePlatform parseSourcePlatform(String platform) {

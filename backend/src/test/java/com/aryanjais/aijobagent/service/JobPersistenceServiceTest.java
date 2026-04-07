@@ -16,13 +16,11 @@ import java.math.BigDecimal;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -37,27 +35,32 @@ class JobPersistenceServiceTest {
     private JobPersistenceService jobPersistenceService;
 
     @Test
-    void persistJob_newJob_savesAndReturnsTrue() {
+    void persistJob_newJob_savesAndReturnsJob() {
         JobRawMessage message = buildMessage("INDEED", "https://indeed.com/job/123");
         when(jobRepository.findBySourcePlatformAndSourceUrl(SourcePlatform.INDEED, "https://indeed.com/job/123"))
                 .thenReturn(Optional.empty());
-        when(jobRepository.save(any(Job.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(jobRepository.save(any(Job.class))).thenAnswer(inv -> {
+            Job j = inv.getArgument(0);
+            j.setId(1L);
+            return j;
+        });
 
-        boolean result = jobPersistenceService.persistJob(message);
+        Job result = jobPersistenceService.persistJob(message);
 
-        assertTrue(result);
+        assertNotNull(result);
+        assertEquals(1L, result.getId());
         verify(jobRepository).save(any(Job.class));
     }
 
     @Test
-    void persistJob_duplicateJob_returnsFalse() {
+    void persistJob_duplicateJob_returnsNull() {
         JobRawMessage message = buildMessage("INDEED", "https://indeed.com/job/123");
         when(jobRepository.findBySourcePlatformAndSourceUrl(SourcePlatform.INDEED, "https://indeed.com/job/123"))
                 .thenReturn(Optional.of(new Job()));
 
-        boolean result = jobPersistenceService.persistJob(message);
+        Job result = jobPersistenceService.persistJob(message);
 
-        assertFalse(result);
+        assertNull(result);
         verify(jobRepository, never()).save(any(Job.class));
     }
 
