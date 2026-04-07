@@ -1,0 +1,102 @@
+spring:
+  application:
+    name: ai-job-agent-notification-service
+
+  # ── Database ──────────────────────────────────────────────────────
+  datasource:
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:aijobagent}?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true&characterEncoding=utf8mb4
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:changeme}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      minimum-idle: 3
+      maximum-pool-size: 10
+      idle-timeout: 300000
+      connection-timeout: 20000
+      pool-name: NotificationServiceHikari
+
+  # ── JPA ───────────────────────────────────────────────────────────
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQL8Dialect
+        format_sql: true
+        default_batch_fetch_size: 20
+        jdbc:
+          batch_size: 25
+
+  # ── Mail ──────────────────────────────────────────────────────────
+  mail:
+    host: ${MAIL_HOST:smtp.gmail.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
+
+  # ── RabbitMQ ──────────────────────────────────────────────────────
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USERNAME:guest}
+    password: ${RABBITMQ_PASSWORD:guest}
+    virtual-host: ${RABBITMQ_VHOST:/}
+    listener:
+      simple:
+        acknowledge-mode: manual
+        prefetch: 1
+        retry:
+          enabled: true
+          initial-interval: 1000
+          max-attempts: 3
+          multiplier: 2.0
+
+  # ── Redis ─────────────────────────────────────────────────────────
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      timeout: 2000ms
+      lettuce:
+        pool:
+          max-active: 5
+          max-idle: 3
+          min-idle: 1
+
+# ── Server (for health endpoint) ──────────────────────────────────────
+server:
+  port: ${SERVER_PORT:8083}
+
+# ── Actuator ──────────────────────────────────────────────────────────
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+# ── Application Custom Config ─────────────────────────────────────────
+app:
+  notification:
+    from-email: ${NOTIFICATION_FROM_EMAIL:noreply@aijobagent.dev}
+    from-name: "AI Job Agent"
+    daily-digest-cron: ${DAILY_DIGEST_CRON:0 0 7 * * *}
+
+# ── Logging ───────────────────────────────────────────────────────────
+logging:
+  level:
+    com.aryanjais.aijobagent: INFO
+    org.hibernate.SQL: WARN
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
