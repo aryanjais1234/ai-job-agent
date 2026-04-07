@@ -24,10 +24,10 @@ public class ScrapeScheduler {
     private final ScrapeLogService scrapeLogService;
 
     /**
-     * Scheduled daily scrape trigger. Cron is configured via ${app.notification.scrape-cron}.
+     * Scheduled daily scrape trigger. Cron is configured via ${app.scraper.cron}.
      * Default: "0 0 6 * * *" (6 AM server time; set to IST via server timezone or cron config).
      */
-    @Scheduled(cron = "${app.notification.scrape-cron:0 0 6 * * *}")
+    @Scheduled(cron = "${app.scraper.cron:0 0 6 * * *}")
     public void triggerDailyScrape() {
         log.info("Starting scheduled daily scrape...");
 

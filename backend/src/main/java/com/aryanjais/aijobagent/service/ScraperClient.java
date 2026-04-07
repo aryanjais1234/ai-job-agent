@@ -1,11 +1,13 @@
 package com.aryanjais.aijobagent.service;
 
 import com.aryanjais.aijobagent.dto.request.TriggerScrapeRequest;
-import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.web.client.ClientHttpRequestFactories;
+import org.springframework.boot.web.client.ClientHttpRequestFactorySettings;
 import org.springframework.http.MediaType;
+import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
@@ -26,10 +28,17 @@ public class ScraperClient {
             @Value("${app.scraper.base-url}") String scraperBaseUrl,
             @Value("${app.scraper.timeout-seconds:300}") int timeoutSeconds,
             RestClient.Builder restClientBuilder) {
+
+        ClientHttpRequestFactorySettings settings = ClientHttpRequestFactorySettings.DEFAULTS
+                .withConnectTimeout(Duration.ofSeconds(10))
+                .withReadTimeout(Duration.ofSeconds(timeoutSeconds));
+        ClientHttpRequestFactory requestFactory = ClientHttpRequestFactories.get(settings);
+
         this.restClient = restClientBuilder
                 .baseUrl(scraperBaseUrl)
+                .requestFactory(requestFactory)
                 .build();
-        log.info("ScraperClient configured with base URL: {}", scraperBaseUrl);
+        log.info("ScraperClient configured with base URL: {}, timeout: {}s", scraperBaseUrl, timeoutSeconds);
     }
 
     /**
