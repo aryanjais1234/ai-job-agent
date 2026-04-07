@@ -1,0 +1,103 @@
+package com.aryanjais.aijobagent.controller;
+
+import com.aryanjais.aijobagent.dto.response.CoverLetterResponse;
+import com.aryanjais.aijobagent.dto.response.TailoredResumeResponse;
+import com.aryanjais.aijobagent.entity.CoverLetter;
+import com.aryanjais.aijobagent.entity.TailoredResume;
+import com.aryanjais.aijobagent.entity.User;
+import com.aryanjais.aijobagent.exception.ResourceNotFoundException;
+import com.aryanjais.aijobagent.repository.CoverLetterRepository;
+import com.aryanjais.aijobagent.repository.TailoredResumeRepository;
+import com.aryanjais.aijobagent.repository.UserRepository;
+import com.aryanjais.aijobagent.service.CoverLetterService;
+import com.aryanjais.aijobagent.service.ResumeTailoringService;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/api/v1/tailor")
+@RequiredArgsConstructor
+@Tag(name = "Tailoring")
+public class TailoringController {
+
+    private final ResumeTailoringService resumeTailoringService;
+    private final CoverLetterService coverLetterService;
+    private final TailoredResumeRepository tailoredResumeRepository;
+    private final CoverLetterRepository coverLetterRepository;
+    private final UserRepository userRepository;
+
+    @PostMapping("/{jobId}")
+    public ResponseEntity<TailoredResumeResponse> tailorResume(
+            Authentication authentication, @PathVariable Long jobId) {
+        User user = getUser(authentication);
+        TailoredResume tailored = resumeTailoringService.tailorResume(user.getId(), jobId);
+        return ResponseEntity.status(HttpStatus.ACCEPTED).body(toResponse(tailored));
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<TailoredResumeResponse> getTailoredResume(
+            Authentication authentication, @PathVariable Long id) {
+        User user = getUser(authentication);
+        TailoredResume tailored = tailoredResumeRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Tailored resume not found: " + id));
+        if (!tailored.getUser().getId().equals(user.getId())) {
+            throw new ResourceNotFoundException("Tailored resume not found: " + id);
+        }
+        return ResponseEntity.ok(toResponse(tailored));
+    }
+
+    @PostMapping("/cover-letter/{jobId}")
+    public ResponseEntity<CoverLetterResponse> generateCoverLetter(
+            Authentication authentication, @PathVariable Long jobId) {
+        User user = getUser(authentication);
+        CoverLetter letter = coverLetterService.generateCoverLetter(user.getId(), jobId);
+        return ResponseEntity.status(HttpStatus.ACCEPTED).body(toCoverLetterResponse(letter));
+    }
+
+    @GetMapping("/cover-letter/{id}/view")
+    public ResponseEntity<CoverLetterResponse> getCoverLetter(
+            Authentication authentication, @PathVariable Long id) {
+        User user = getUser(authentication);
+        CoverLetter letter = coverLetterRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Cover letter not found: " + id));
+        if (!letter.getUser().getId().equals(user.getId())) {
+            throw new ResourceNotFoundException("Cover letter not found: " + id);
+        }
+        return ResponseEntity.ok(toCoverLetterResponse(letter));
+    }
+
+    private User getUser(Authentication authentication) {
+        return userRepository.findByEmail(authentication.getName())
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+    }
+
+    private TailoredResumeResponse toResponse(TailoredResume tr) {
+        return TailoredResumeResponse.builder()
+                .id(tr.getId())
+                .jobId(tr.getJob().getId())
+                .jobTitle(tr.getJob().getTitle())
+                .company(tr.getJob().getCompany())
+                .tailoredContent(tr.getTailoredContent())
+                .modificationsLog(tr.getModificationsLog())
+                .atsScore(tr.getAtsScore())
+                .pdfAvailable(tr.getPdfFilePath() != null)
+                .createdAt(tr.getCreatedAt())
+                .build();
+    }
+
+    private CoverLetterResponse toCoverLetterResponse(CoverLetter cl) {
+        return CoverLetterResponse.builder()
+                .id(cl.getId())
+                .jobId(cl.getJob().getId())
+                .jobTitle(cl.getJob().getTitle())
+                .company(cl.getJob().getCompany())
+                .content(cl.getContent())
+                .pdfAvailable(cl.getPdfFilePath() != null)
+                .createdAt(cl.getCreatedAt())
+                .build();
+    }
+}
