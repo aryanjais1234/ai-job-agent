@@ -110,6 +110,7 @@ app:
   scraper:
     base-url: ${SCRAPER_SERVICE_URL:http://scraper-service:8000}
     timeout-seconds: 300
+    cron: ${SCRAPE_CRON:0 0 6 * * *}
 
   storage:
     resume-upload-dir: ${RESUME_UPLOAD_DIR:/app/storage/resumes}
