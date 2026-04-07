@@ -1,6 +1,7 @@
 package com.aryanjais.aijobagent.messaging.consumer;
 
 import com.aryanjais.aijobagent.messaging.dto.JobRawMessage;
+import com.aryanjais.aijobagent.messaging.producer.JobAnalyzeProducer;
 import com.aryanjais.aijobagent.service.JobPersistenceService;
 import com.aryanjais.aijobagent.config.RabbitMQConfig;
 import com.rabbitmq.client.Channel;
@@ -24,6 +25,7 @@ public class JobRawConsumer {
     private static final Logger log = LoggerFactory.getLogger(JobRawConsumer.class);
 
     private final JobPersistenceService jobPersistenceService;
+    private final JobAnalyzeProducer jobAnalyzeProducer;
 
     @RabbitListener(queues = RabbitMQConfig.QUEUE_JOBS_RAW)
     public void consumeRawJob(JobRawMessage message, Channel channel,
@@ -31,11 +33,13 @@ public class JobRawConsumer {
         try {
             log.debug("Received raw job message: {} @ {}", message.getTitle(), message.getCompany());
 
-            boolean isNew = jobPersistenceService.persistJob(message);
+            var persistedJob = jobPersistenceService.persistJob(message);
 
-            if (isNew) {
+            if (persistedJob != null) {
                 log.info("New job persisted: {} @ {} [{}]",
                         message.getTitle(), message.getCompany(), message.getSourcePlatform());
+                // Publish for AI analysis (Phase 3 pipeline)
+                jobAnalyzeProducer.publishForAnalysis(persistedJob.getId());
             } else {
                 log.debug("Duplicate job skipped: {} @ {} [{}]",
                         message.getTitle(), message.getCompany(), message.getSourcePlatform());
