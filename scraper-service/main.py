@@ -58,16 +58,23 @@ def get_rabbitmq_connection() -> pika.BlockingConnection:
 
 
 def publish_job(job_data: dict) -> None:
-    """Publish a single job payload to the jobs.raw RabbitMQ queue."""
+    """Publish a single job payload to the jobs.raw RabbitMQ queue.
+
+    Publishes directly to the queue (default exchange). The queue is declared
+    by the Spring Boot backend with dead-letter exchange arguments, so this
+    service does NOT redeclare it to avoid argument mismatch errors.
+    """
     connection = get_rabbitmq_connection()
     try:
         channel = connection.channel()
-        channel.queue_declare(queue=JOBS_RAW_QUEUE, durable=True)
         channel.basic_publish(
             exchange="",
             routing_key=JOBS_RAW_QUEUE,
             body=json.dumps(job_data, default=str),
-            properties=pika.BasicProperties(delivery_mode=2),  # persistent
+            properties=pika.BasicProperties(
+                delivery_mode=2,  # persistent
+                content_type="application/json",
+            ),
         )
         logger.info("Published job to %s: %s @ %s", JOBS_RAW_QUEUE, job_data.get("title"), job_data.get("company"))
     finally:
