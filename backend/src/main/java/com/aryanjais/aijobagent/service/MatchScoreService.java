@@ -263,11 +263,8 @@ public class MatchScoreService {
         String city = location.split(",")[0].trim().toLowerCase();
         // Normalize common variants
         city = city.replace("bengaluru", "bangalore")
-                .replace("mumbai", "mumbai")
                 .replace("bombay", "mumbai")
-                .replace("chennai", "chennai")
                 .replace("madras", "chennai")
-                .replace("kolkata", "kolkata")
                 .replace("calcutta", "kolkata")
                 .replace("new delhi", "delhi")
                 .replace("noida", "delhi ncr")

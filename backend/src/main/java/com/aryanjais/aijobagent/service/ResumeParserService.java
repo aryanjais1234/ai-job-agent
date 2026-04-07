@@ -77,6 +77,8 @@ public class ResumeParserService {
             "(?i)(?:^|\\n)\\s*(?:work\\s+)?experience\\s*(?::|\\n)",
             Pattern.MULTILINE);
 
+    // Pattern matches: "Title at/- Company StartDate - EndDate"
+    // Group 1: Job title, Group 2: Company name, Group 3: Start date (year or month+year), Group 4: End date (year, month+year, "Present", or "Current")
     private static final Pattern JOB_ENTRY_PATTERN = Pattern.compile(
             "(?i)([A-Z][A-Za-z\\s&.,'-]+?)\\s*(?:[-|–—@at]|\\bat\\b)\\s*([A-Z][A-Za-z\\s&.,'-]+?)\\s*" +
                     "(?:[-|–—]|\\bfrom\\b)?\\s*(?:(\\d{4}|(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\\s*\\d{4})" +
