@@ -31,6 +31,7 @@ public class NotificationConsumer {
             try {
                 type = NotificationType.valueOf(message.getType());
             } catch (IllegalArgumentException e) {
+                log.warn("Unknown notification type '{}', falling back to MATCH_ALERT", message.getType());
                 type = NotificationType.MATCH_ALERT;
             }
 
