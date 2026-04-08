@@ -77,12 +77,12 @@ services:
       timeout: 10s
       retries: 10
 
-  # ── Spring Boot Backend ──────────────────────────────────────────────
-  backend:
+  # ── API Gateway (Spring Boot) ──────────────────────────────────────
+  api-gateway:
     build:
       context: ./backend
-      dockerfile: Dockerfile
-    container_name: aijobagent-backend
+      dockerfile: api-gateway/Dockerfile
+    container_name: aijobagent-api-gateway
     restart: unless-stopped
     depends_on:
       mysql:
@@ -105,19 +105,117 @@ services:
       RABBITMQ_USERNAME: ${RABBITMQ_USERNAME:-guest}
       RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-guest}
       JWT_SECRET: ${JWT_SECRET}
-      OPENAI_API_KEY: ${OPENAI_API_KEY}
-      MAIL_HOST: ${MAIL_HOST:-smtp.gmail.com}
-      MAIL_PORT: ${MAIL_PORT:-587}
-      MAIL_USERNAME: ${MAIL_USERNAME}
-      MAIL_PASSWORD: ${MAIL_PASSWORD}
-      NOTIFICATION_FROM_EMAIL: ${NOTIFICATION_FROM_EMAIL:-noreply@aijobagent.dev}
       SCRAPER_SERVICE_URL: http://scraper-service:8000
       SWAGGER_ENABLED: ${SWAGGER_ENABLED:-false}
+      SERVER_PORT: 8080
     ports:
       - "8080:8080"
     volumes:
       - resume_storage:/app/storage/resumes
       - pdf_storage:/app/storage/pdfs
+    networks:
+      - aijobagent-net
+
+  # ── Job Processor (Spring Boot) ────────────────────────────────────
+  job-processor:
+    build:
+      context: ./backend
+      dockerfile: job-processor/Dockerfile
+    container_name: aijobagent-job-processor
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_NAME: ${DB_NAME:-aijobagent}
+      DB_USERNAME: ${DB_USERNAME:-aijobagent}
+      DB_PASSWORD: ${DB_PASSWORD:-changeme}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USERNAME: ${RABBITMQ_USERNAME:-guest}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-guest}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      SERVER_PORT: 8081
+    networks:
+      - aijobagent-net
+
+  # ── Document Service (Spring Boot) ─────────────────────────────────
+  document-service:
+    build:
+      context: ./backend
+      dockerfile: document-service/Dockerfile
+    container_name: aijobagent-document-service
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_NAME: ${DB_NAME:-aijobagent}
+      DB_USERNAME: ${DB_USERNAME:-aijobagent}
+      DB_PASSWORD: ${DB_PASSWORD:-changeme}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USERNAME: ${RABBITMQ_USERNAME:-guest}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-guest}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      SERVER_PORT: 8082
+    volumes:
+      - resume_storage:/app/storage/resumes
+      - pdf_storage:/app/storage/pdfs
+    networks:
+      - aijobagent-net
+
+  # ── Notification Service (Spring Boot) ──────────────────────────────
+  notification-service:
+    build:
+      context: ./backend
+      dockerfile: notification-service/Dockerfile
+    container_name: aijobagent-notification-service
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_NAME: ${DB_NAME:-aijobagent}
+      DB_USERNAME: ${DB_USERNAME:-aijobagent}
+      DB_PASSWORD: ${DB_PASSWORD:-changeme}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USERNAME: ${RABBITMQ_USERNAME:-guest}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-guest}
+      MAIL_HOST: ${MAIL_HOST:-smtp.gmail.com}
+      MAIL_PORT: ${MAIL_PORT:-587}
+      MAIL_USERNAME: ${MAIL_USERNAME}
+      MAIL_PASSWORD: ${MAIL_PASSWORD}
+      NOTIFICATION_FROM_EMAIL: ${NOTIFICATION_FROM_EMAIL:-noreply@aijobagent.dev}
+      SERVER_PORT: 8083
     networks:
       - aijobagent-net
 
@@ -147,10 +245,27 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8080}
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost}
     container_name: aijobagent-frontend
     restart: unless-stopped
     ports:
       - "3000:80"
+    networks:
+      - aijobagent-net
+
+  # ── Nginx Reverse Proxy ──────────────────────────────────────────────
+  nginx:
+    image: nginx:alpine
+    container_name: aijobagent-nginx
+    restart: unless-stopped
+    depends_on:
+      - api-gateway
+      - frontend
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
     networks:
       - aijobagent-net

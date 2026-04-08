@@ -1,0 +1,93 @@
+spring:
+  application:
+    name: ai-job-agent-job-processor
+
+  # ── Database ──────────────────────────────────────────────────────
+  datasource:
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:aijobagent}?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true&characterEncoding=utf8mb4
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:changeme}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      minimum-idle: 3
+      maximum-pool-size: 10
+      idle-timeout: 300000
+      connection-timeout: 20000
+      pool-name: JobProcessorHikari
+
+  # ── JPA ───────────────────────────────────────────────────────────
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQL8Dialect
+        format_sql: true
+        default_batch_fetch_size: 20
+        jdbc:
+          batch_size: 25
+
+  # ── RabbitMQ ──────────────────────────────────────────────────────
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USERNAME:guest}
+    password: ${RABBITMQ_PASSWORD:guest}
+    virtual-host: ${RABBITMQ_VHOST:/}
+    listener:
+      simple:
+        acknowledge-mode: manual
+        prefetch: 1
+        retry:
+          enabled: true
+          initial-interval: 1000
+          max-attempts: 3
+          multiplier: 2.0
+
+  # ── Redis ─────────────────────────────────────────────────────────
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      timeout: 2000ms
+      lettuce:
+        pool:
+          max-active: 5
+          max-idle: 3
+          min-idle: 1
+
+# ── Server (for health endpoint) ──────────────────────────────────────
+server:
+  port: ${SERVER_PORT:8081}
+
+# ── Actuator ──────────────────────────────────────────────────────────
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+# ── Application Custom Config ─────────────────────────────────────────
+app:
+  ai:
+    api-key: ${OPENAI_API_KEY}
+    base-url: ${AI_BASE_URL:https://api.openai.com/v1}
+    analysis-model: ${AI_ANALYSIS_MODEL:gpt-4o-mini}
+    tailor-model: ${AI_TAILOR_MODEL:gpt-4o}
+    max-tokens: 4096
+    timeout-seconds: 60
+    retry-max-attempts: 3
+
+  matching:
+    minimum-score-threshold: 70.0
+    auto-tailor-threshold: 75.0
+
+# ── Logging ───────────────────────────────────────────────────────────
+logging:
+  level:
+    com.aryanjais.aijobagent: INFO
+    org.hibernate.SQL: WARN
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"

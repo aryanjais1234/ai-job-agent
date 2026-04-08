@@ -5,15 +5,12 @@ import Layout from './components/Layout';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import DashboardPage from './pages/DashboardPage';
-
-function PlaceholderPage({ title }) {
-  return (
-    <div className="text-center py-16">
-      <h1 className="text-3xl font-bold text-gray-800 mb-2">{title}</h1>
-      <p className="text-gray-500">Coming soon</p>
-    </div>
-  );
-}
+import MatchesPage from './pages/MatchesPage';
+import MatchDetailPage from './pages/MatchDetailPage';
+import ApplicationsPage from './pages/ApplicationsPage';
+import OnboardingPage from './pages/OnboardingPage';
+import NotificationsPage from './pages/NotificationsPage';
+import SettingsPage from './pages/SettingsPage';
 
 function DefaultRedirect() {
   const { isAuthenticated } = useAuth();
@@ -39,18 +36,26 @@ function App() {
             }
           />
           <Route
-            path="/applications"
+            path="/matches"
             element={
               <ProtectedRoute>
-                <Layout><PlaceholderPage title="Application Tracker" /></Layout>
+                <Layout><MatchesPage /></Layout>
               </ProtectedRoute>
             }
           />
           <Route
-            path="/resume/:id"
+            path="/match/:id"
             element={
               <ProtectedRoute>
-                <Layout><PlaceholderPage title="Resume Preview" /></Layout>
+                <Layout><MatchDetailPage /></Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/applications"
+            element={
+              <ProtectedRoute>
+                <Layout><ApplicationsPage /></Layout>
               </ProtectedRoute>
             }
           />
@@ -58,7 +63,23 @@ function App() {
             path="/onboarding"
             element={
               <ProtectedRoute>
-                <Layout><PlaceholderPage title="Onboarding" /></Layout>
+                <Layout><OnboardingPage /></Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/notifications"
+            element={
+              <ProtectedRoute>
+                <Layout><NotificationsPage /></Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/settings"
+            element={
+              <ProtectedRoute>
+                <Layout><SettingsPage /></Layout>
               </ProtectedRoute>
             }
           />
