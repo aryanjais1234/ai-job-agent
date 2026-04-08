@@ -34,11 +34,31 @@ public class OpenAiClient {
     private final AiConfig aiConfig;
     private final ObjectMapper objectMapper;
 
+    // Shared HttpClient singleton — avoids creating a new connection pool per request
+    private volatile HttpClient sharedClient;
+    private final Object clientLock = new Object();
+
     // Circuit breaker state
     private static final int CIRCUIT_FAILURE_THRESHOLD = 5;
     private static final long CIRCUIT_RESET_MS = 60_000;
     private final AtomicInteger consecutiveFailures = new AtomicInteger(0);
     private final AtomicLong circuitOpenedAt = new AtomicLong(0);
+
+    private HttpClient getHttpClient() {
+        HttpClient client = sharedClient;
+        if (client == null) {
+            synchronized (clientLock) {
+                client = sharedClient;
+                if (client == null) {
+                    client = HttpClient.newBuilder()
+                            .connectTimeout(Duration.ofSeconds(aiConfig.getTimeoutSeconds()))
+                            .build();
+                    sharedClient = client;
+                }
+            }
+        }
+        return client;
+    }
 
     /**
      * Send a chat completion request to OpenAI.
@@ -92,9 +112,7 @@ public class OpenAiClient {
 
             String body = objectMapper.writeValueAsString(requestBody);
 
-            HttpClient client = HttpClient.newBuilder()
-                    .connectTimeout(Duration.ofSeconds(aiConfig.getTimeoutSeconds()))
-                    .build();
+            HttpClient client = getHttpClient();
 
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(aiConfig.getBaseUrl() + "/chat/completions"))
