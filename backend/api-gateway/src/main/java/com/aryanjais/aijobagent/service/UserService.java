@@ -6,11 +6,20 @@ import com.aryanjais.aijobagent.dto.response.UserResponse;
 import com.aryanjais.aijobagent.entity.User;
 import com.aryanjais.aijobagent.entity.UserPreference;
 import com.aryanjais.aijobagent.exception.ResourceNotFoundException;
+import com.aryanjais.aijobagent.repository.ApplicationRepository;
+import com.aryanjais.aijobagent.repository.CoverLetterRepository;
+import com.aryanjais.aijobagent.repository.JobMatchRepository;
+import com.aryanjais.aijobagent.repository.NotificationLogRepository;
+import com.aryanjais.aijobagent.repository.NotificationPreferenceRepository;
+import com.aryanjais.aijobagent.repository.ResumeRepository;
+import com.aryanjais.aijobagent.repository.TailoredResumeRepository;
 import com.aryanjais.aijobagent.repository.UserPreferenceRepository;
 import com.aryanjais.aijobagent.repository.UserRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,8 +27,17 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class UserService {
 
+    private static final Logger log = LoggerFactory.getLogger(UserService.class);
+
     private final UserRepository userRepository;
     private final UserPreferenceRepository userPreferenceRepository;
+    private final ApplicationRepository applicationRepository;
+    private final JobMatchRepository jobMatchRepository;
+    private final TailoredResumeRepository tailoredResumeRepository;
+    private final CoverLetterRepository coverLetterRepository;
+    private final NotificationLogRepository notificationLogRepository;
+    private final NotificationPreferenceRepository notificationPreferenceRepository;
+    private final ResumeRepository resumeRepository;
     private final ObjectMapper objectMapper;
 
     public UserResponse getProfile(Long userId) {
@@ -108,6 +126,39 @@ public class UserService {
         }
 
         return userPreferenceRepository.save(preference);
+    }
+
+    /**
+     * Soft-delete a user account by deactivating it and cleaning up associated data.
+     */
+    @Transactional
+    public void deleteAccount(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
+
+        // Remove related records
+        notificationLogRepository.deleteByUserId(userId);
+        notificationPreferenceRepository.deleteByUserId(userId);
+        applicationRepository.deleteByUserId(userId);
+        coverLetterRepository.deleteByUserId(userId);
+        tailoredResumeRepository.deleteByUserId(userId);
+        jobMatchRepository.deleteByUserId(userId);
+        resumeRepository.deleteByUserId(userId);
+        userPreferenceRepository.deleteByUserId(userId);
+
+        // Soft-delete: deactivate user, anonymize PII
+        user.setIsActive(false);
+        user.setEmail("deleted_" + userId + "@deactivated.local");
+        user.setFullName("Deleted User");
+        user.setPhone(null);
+        user.setLinkedinUrl(null);
+        user.setGithubUrl(null);
+        user.setPortfolioUrl(null);
+        user.setLocation(null);
+        user.setVerificationToken(null);
+        userRepository.save(user);
+
+        log.info("User account soft-deleted and anonymized: userId={}", userId);
     }
 
     private UserResponse buildUserResponse(User user) {

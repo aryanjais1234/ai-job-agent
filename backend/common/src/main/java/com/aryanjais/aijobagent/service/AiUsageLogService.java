@@ -1,5 +1,6 @@
 package com.aryanjais.aijobagent.service;
 
+import com.aryanjais.aijobagent.dto.response.AiUsageLogResponse;
 import com.aryanjais.aijobagent.entity.AiUsageLog;
 import com.aryanjais.aijobagent.entity.User;
 import com.aryanjais.aijobagent.entity.enums.AiOperationType;
@@ -7,6 +8,8 @@ import com.aryanjais.aijobagent.repository.AiUsageLogRepository;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -61,9 +64,32 @@ public class AiUsageLogService {
         logUsage(user, operationType, model, 0, 0, 0, durationMs, false);
     }
 
+    /**
+     * Get paginated AI usage logs (for admin view).
+     */
+    public Page<AiUsageLogResponse> getAiUsageLogs(Pageable pageable) {
+        return aiUsageLogRepository.findAllByOrderByCreatedAtDesc(pageable)
+                .map(this::toResponse);
+    }
+
     private BigDecimal estimateCost(int promptTokens, int completionTokens) {
         BigDecimal inputCost = INPUT_PRICE_PER_TOKEN.multiply(BigDecimal.valueOf(promptTokens));
         BigDecimal outputCost = OUTPUT_PRICE_PER_TOKEN.multiply(BigDecimal.valueOf(completionTokens));
         return inputCost.add(outputCost).setScale(6, RoundingMode.HALF_UP);
+    }
+
+    private AiUsageLogResponse toResponse(AiUsageLog entity) {
+        return AiUsageLogResponse.builder()
+                .id(entity.getId())
+                .operationType(entity.getOperationType() != null ? entity.getOperationType().name() : null)
+                .modelUsed(entity.getModelUsed())
+                .promptTokens(entity.getPromptTokens())
+                .completionTokens(entity.getCompletionTokens())
+                .totalTokens(entity.getTotalTokens())
+                .costUsd(entity.getCostUsd())
+                .durationMs(entity.getDurationMs())
+                .success(entity.getSuccess())
+                .createdAt(entity.getCreatedAt())
+                .build();
     }
 }

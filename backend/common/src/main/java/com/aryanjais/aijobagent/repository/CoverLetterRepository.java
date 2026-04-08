@@ -10,4 +10,6 @@ import java.util.Optional;
 public interface CoverLetterRepository extends JpaRepository<CoverLetter, Long> {
 
     Optional<CoverLetter> findByUserIdAndJobId(Long userId, Long jobId);
+
+    void deleteByUserId(Long userId);
 }

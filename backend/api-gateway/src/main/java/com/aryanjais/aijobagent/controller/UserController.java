@@ -14,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -55,6 +56,13 @@ public class UserController {
             @Valid @RequestBody UpdatePreferencesRequest request) {
         User user = getCurrentUser(userDetails);
         return ResponseEntity.ok(userService.updatePreferences(user.getId(), request));
+    }
+
+    @DeleteMapping("/account")
+    public ResponseEntity<Void> deleteAccount(@AuthenticationPrincipal UserDetails userDetails) {
+        User user = getCurrentUser(userDetails);
+        userService.deleteAccount(user.getId());
+        return ResponseEntity.noContent().build();
     }
 
     private User getCurrentUser(UserDetails userDetails) {

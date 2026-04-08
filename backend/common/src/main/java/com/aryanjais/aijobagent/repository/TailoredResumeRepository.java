@@ -10,4 +10,6 @@ import java.util.Optional;
 public interface TailoredResumeRepository extends JpaRepository<TailoredResume, Long> {
 
     Optional<TailoredResume> findByUserIdAndJobId(Long userId, Long jobId);
+
+    void deleteByUserId(Long userId);
 }
