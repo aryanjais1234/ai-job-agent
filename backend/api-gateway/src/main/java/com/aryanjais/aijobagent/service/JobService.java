@@ -18,6 +18,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
@@ -49,7 +50,32 @@ public class JobService {
      * List all active jobs with pagination.
      */
     public Page<JobResponse> listJobs(Pageable pageable) {
-        return jobRepository.findAll(pageable).map(job -> {
+        return jobRepository.findByIsActiveTrue(pageable).map(job -> {
+            Optional<JobAnalysis> analysis = jobAnalysisRepository.findByJobId(job.getId());
+            return buildJobResponse(job, analysis.orElse(null));
+        });
+    }
+
+    /**
+     * Search jobs by keyword and/or location.
+     */
+    public Page<JobResponse> searchJobs(String keyword, String location, Pageable pageable) {
+        Page<Job> jobs;
+
+        boolean hasKeyword = keyword != null && !keyword.isBlank();
+        boolean hasLocation = location != null && !location.isBlank();
+
+        if (hasKeyword && hasLocation) {
+            jobs = jobRepository.searchByKeywordAndLocation(keyword.trim(), location.trim(), pageable);
+        } else if (hasKeyword) {
+            jobs = jobRepository.searchByKeyword(keyword.trim(), pageable);
+        } else if (hasLocation) {
+            jobs = jobRepository.searchByLocation(location.trim(), pageable);
+        } else {
+            jobs = jobRepository.findByIsActiveTrue(pageable);
+        }
+
+        return jobs.map(job -> {
             Optional<JobAnalysis> analysis = jobAnalysisRepository.findByJobId(job.getId());
             return buildJobResponse(job, analysis.orElse(null));
         });
@@ -61,6 +87,17 @@ public class JobService {
     public Page<JobMatchResponse> getMatchesForUser(Long userId, Pageable pageable) {
         return jobMatchRepository.findByUserIdOrderByOverallScoreDesc(userId, pageable)
                 .map(this::buildJobMatchResponse);
+    }
+
+    /**
+     * Get paginated match results for a user filtered by minimum score, sorted by score descending.
+     */
+    public Page<JobMatchResponse> getMatchesForUser(Long userId, Double minScore, Pageable pageable) {
+        if (minScore != null && minScore > 0) {
+            return jobMatchRepository.findByUserIdAndOverallScoreGreaterThanEqualOrderByOverallScoreDesc(
+                    userId, BigDecimal.valueOf(minScore), pageable).map(this::buildJobMatchResponse);
+        }
+        return getMatchesForUser(userId, pageable);
     }
 
     private JobResponse buildJobResponse(Job job, JobAnalysis analysis) {

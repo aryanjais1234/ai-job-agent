@@ -31,14 +31,23 @@ public class JobController {
     private final UserRepository userRepository;
 
     /**
-     * GET /api/v1/jobs — List all active jobs with pagination.
+     * GET /api/v1/jobs — List jobs with optional search by keyword and location.
      */
     @GetMapping
     public ResponseEntity<Page<JobResponse>> listJobs(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String location,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
 
         Pageable pageable = PageRequest.of(page, size);
+
+        boolean hasSearch = (keyword != null && !keyword.isBlank())
+                || (location != null && !location.isBlank());
+
+        if (hasSearch) {
+            return ResponseEntity.ok(jobService.searchJobs(keyword, location, pageable));
+        }
         return ResponseEntity.ok(jobService.listJobs(pageable));
     }
 
@@ -51,11 +60,12 @@ public class JobController {
     }
 
     /**
-     * GET /api/v1/jobs/matches — Get user's job matches sorted by score.
+     * GET /api/v1/jobs/matches — Get user's job matches sorted by score with optional minScore filter.
      */
     @GetMapping("/matches")
     public ResponseEntity<Page<JobMatchResponse>> getMatches(
             Authentication authentication,
+            @RequestParam(required = false) Double minScore,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
 
@@ -64,6 +74,6 @@ public class JobController {
                         "User not found"));
 
         Pageable pageable = PageRequest.of(page, size);
-        return ResponseEntity.ok(jobService.getMatchesForUser(user.getId(), pageable));
+        return ResponseEntity.ok(jobService.getMatchesForUser(user.getId(), minScore, pageable));
     }
 }

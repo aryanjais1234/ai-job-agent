@@ -14,7 +14,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-
 /**
  * Service for managing scrape log entries (T-2.8).
  * Records the start, progress, and completion of scraping runs.
@@ -96,6 +95,24 @@ public class ScrapeLogService {
     public Page<ScrapeLogResponse> getScrapeLogsPage(Pageable pageable) {
         return scrapeLogRepository.findAllByOrderByStartedAtDesc(pageable)
                 .map(this::toResponse);
+    }
+
+    /**
+     * Get scrape logs with optional status and platform filters.
+     */
+    public Page<ScrapeLogResponse> getScrapeLogsPage(ScrapeStatus status, ScrapePlatform platform,
+                                                      Pageable pageable) {
+        Page<ScrapeLog> page;
+        if (status != null && platform != null) {
+            page = scrapeLogRepository.findByStatusAndPlatformOrderByStartedAtDesc(status, platform, pageable);
+        } else if (status != null) {
+            page = scrapeLogRepository.findByStatusOrderByStartedAtDesc(status, pageable);
+        } else if (platform != null) {
+            page = scrapeLogRepository.findByPlatformOrderByStartedAtDesc(platform, pageable);
+        } else {
+            page = scrapeLogRepository.findAllByOrderByStartedAtDesc(pageable);
+        }
+        return page.map(this::toResponse);
     }
 
     private ScrapeLogResponse toResponse(ScrapeLog entity) {

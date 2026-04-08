@@ -1,5 +1,6 @@
 package com.aryanjais.aijobagent.service;
 
+import com.aryanjais.aijobagent.dto.response.AiUsageLogResponse;
 import com.aryanjais.aijobagent.entity.AiUsageLog;
 import com.aryanjais.aijobagent.entity.User;
 import com.aryanjais.aijobagent.entity.enums.AiOperationType;
@@ -10,6 +11,14 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -90,5 +99,35 @@ class AiUsageLogServiceTest {
         assertNotNull(result.getCostUsd());
         // Cost should be > 0 for non-zero tokens
         assertTrue(result.getCostUsd().doubleValue() > 0);
+    }
+
+    @Test
+    void getAiUsageLogs_returnsPaginatedResults() {
+        AiUsageLog log1 = AiUsageLog.builder()
+                .id(1L)
+                .operationType(AiOperationType.JD_ANALYSIS)
+                .modelUsed("gpt-4o-mini")
+                .promptTokens(500)
+                .completionTokens(200)
+                .totalTokens(700)
+                .costUsd(new BigDecimal("0.000195"))
+                .durationMs(1500)
+                .success(true)
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        Pageable pageable = PageRequest.of(0, 10);
+        Page<AiUsageLog> page = new PageImpl<>(List.of(log1));
+        when(aiUsageLogRepository.findAllByOrderByCreatedAtDesc(pageable)).thenReturn(page);
+
+        Page<AiUsageLogResponse> result = aiUsageLogService.getAiUsageLogs(pageable);
+
+        assertEquals(1, result.getTotalElements());
+        AiUsageLogResponse response = result.getContent().get(0);
+        assertEquals(1L, response.getId());
+        assertEquals("JD_ANALYSIS", response.getOperationType());
+        assertEquals("gpt-4o-mini", response.getModelUsed());
+        assertEquals(700, response.getTotalTokens());
+        assertTrue(response.getSuccess());
     }
 }
