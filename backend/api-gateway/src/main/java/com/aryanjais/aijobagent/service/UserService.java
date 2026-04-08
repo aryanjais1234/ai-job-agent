@@ -136,7 +136,7 @@ public class UserService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
 
-        // Remove related records
+        // Remove related records in child-to-parent order to respect FK constraints
         notificationLogRepository.deleteByUserId(userId);
         notificationPreferenceRepository.deleteByUserId(userId);
         applicationRepository.deleteByUserId(userId);

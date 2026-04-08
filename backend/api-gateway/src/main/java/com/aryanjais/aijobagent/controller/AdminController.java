@@ -53,15 +53,15 @@ public class AdminController {
         if (status != null && !status.isBlank()) {
             try {
                 scrapeStatus = ScrapeStatus.valueOf(status.toUpperCase());
-            } catch (IllegalArgumentException ignored) {
-                // Invalid status filter ignored, returns unfiltered
+            } catch (IllegalArgumentException e) {
+                return ResponseEntity.badRequest().build();
             }
         }
         if (platform != null && !platform.isBlank()) {
             try {
                 scrapePlatform = ScrapePlatform.valueOf(platform.toUpperCase());
-            } catch (IllegalArgumentException ignored) {
-                // Invalid platform filter ignored, returns unfiltered
+            } catch (IllegalArgumentException e) {
+                return ResponseEntity.badRequest().build();
             }
         }
 
